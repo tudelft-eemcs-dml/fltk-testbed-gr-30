@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import List, Callable
 
 from dataclass_csv import DataclassWriter
+from sklearn import preprocessing
+from sklearn.decomposition import PCA
 from torch.distributed import rpc
 from torch.utils.tensorboard import SummaryWriter
 
@@ -153,6 +155,7 @@ class Federator(object):
         logging.info('All clients are ready')
 
     def remote_run_epoch(self, epochs):
+        weightDeltas = []
         responses = []
         client_weights = []
         selected_clients = self.select_clients(self.config.clients_per_round)
@@ -191,6 +194,14 @@ class Federator(object):
 
             client_weights.append(weights)
         updated_model = average_nn_parameters(client_weights)
+
+        # Calculate difference between weights for each client and global model
+        for weights in client_weights:
+            weightDelta = weights - updated_model
+            # TODO extract data for only 1 source class
+            weightDeltas.append(weightDelta)
+            standardizedWeights = preprocessing.scale(weightDeltas)
+            pca_res = PCA(n_components=2).fit(standardizedWeights)
 
         # test global model
         logging.info("Testing on global test set")
