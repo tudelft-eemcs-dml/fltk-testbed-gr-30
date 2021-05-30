@@ -6,6 +6,7 @@ from logging import ERROR, WARNING, INFO
 from math import floor, ceil
 from typing import List, Dict
 
+from numpy import random
 from collections import ChainMap
 
 from fltk.strategy.client_selection import random_selection
@@ -52,7 +53,7 @@ class Attack(ABC):
 
 class LabelFlipAttack(Attack):
 
-    def is_active(self, current_round=0) -> bool:
+    def isActive(self, current_round=0) -> bool:
         return True
 
     def build_attack(self, flip_description=None) -> PoisonPill:
@@ -145,7 +146,6 @@ def create_attack(cfg: BareConfig, **kwargs) -> Attack:
     """
     Function to create Poison attack based on the configuration that was passed during execution.
     Exception gets thrown when the configuration file is not correct.
-    TODO parse TimedFlipAttack from config
     """
     assert not cfg is None and not cfg.poison is None
     attack_mapper = {'flip': LabelFlipAttack, 'timed': TimedLabelFlipAttack}
