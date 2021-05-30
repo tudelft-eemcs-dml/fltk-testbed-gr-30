@@ -103,8 +103,6 @@ class Federator(object):
         self.test_data.init_dataloader()
         config.data_sampler = copy_sampler
 
-        # Poisoning
-        self.attack = attack
 
     def create_clients(self, client_id_triple):
         for id, rank, world_size in client_id_triple:
