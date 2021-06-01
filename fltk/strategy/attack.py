@@ -6,7 +6,6 @@ from logging import ERROR, WARNING, INFO
 from math import floor, ceil
 from typing import List, Dict
 
-from numpy import random
 from collections import ChainMap
 
 from fltk.strategy.client_selection import random_selection
