@@ -30,7 +30,7 @@ class Attack(ABC):
             self.logger.log(WARNING, f'Advancing outside of preset number of rounds {self.round} / {self.max_rounds}')
 
     @abstractmethod
-    def select_poisoned_workers(self, workers: List, ratio: float = None) -> List:
+    def select_poisoned_clients(self, workers: List, ratio: float = None) -> List:
         pass
 
     @abstractmethod
@@ -91,7 +91,7 @@ class LabelFlipAttack(Attack):
         self.label_shuffle = dict(ChainMap(*cfg.get_attack_config()['config']))
         self.random = random
 
-    def select_poisoned_workers(self, workers: List, ratio: float = None):
+    def select_poisoned_clients(self, workers: List, ratio: float = None):
         """
         Randomly select workers from a list of workers provided by the Federator.
         """
@@ -128,6 +128,8 @@ class TimedLabelFlipAttack(LabelFlipAttack):
         Select poisoned workers based on availability.
         When availability = 0.5, selecting a participant has a 50% chance of being a poisoned one.
         """
+        if self.availability == 0:
+            return random_selection(poisoned_clients + healthy_clients, n)
         poison_counter = 0
         healthy_counter = 0
         nr_poisoned_workers = len(poisoned_clients)

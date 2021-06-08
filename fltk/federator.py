@@ -292,12 +292,12 @@ class Federator(object):
             # Update the clients to point to the newer version.
             self.update_clients(rat)
             if self.attack:
-                self.poisoned_workers: List[ClientRef] = self.attack.select_poisoned_workers(self.clients, rat)
+                self.poisoned_clients: List[ClientRef] = self.attack.select_poisoned_clients(self.clients, rat)
                 # Rest of the clients are healthy
                 self.healthy_clients = list(set(self.clients).symmetric_difference(set(self.poisoned_clients)))
-                print(f"Poisoning workers: {self.poisoned_workers}")
+                print(f"Poisoning workers: {self.poisoned_clients}")
                 with open(f"{self.tb_path_base}/config_{rat}_poisoned.txt", 'w') as f:
-                    f.writelines(list(map(lambda worker: worker.name, self.poisoned_workers)))
+                    f.writelines(list(map(lambda worker: worker.name, self.poisoned_clients)))
                 poison_pill = self.attack.get_poison_pill()
             self.client_load_data(poison_pill)
             self.ping_all()
