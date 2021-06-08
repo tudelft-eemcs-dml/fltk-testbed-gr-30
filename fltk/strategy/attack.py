@@ -128,6 +128,7 @@ class TimedLabelFlipAttack(LabelFlipAttack):
         Select poisoned workers based on availability.
         When availability = 0.5, selecting a participant has a 50% chance of being a poisoned one.
         """
+        # When availability =0, use normal client selection
         if self.availability == 0:
             return random_selection(poisoned_clients + healthy_clients, n)
         poison_counter = 0
