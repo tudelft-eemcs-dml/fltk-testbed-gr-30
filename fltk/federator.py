@@ -180,7 +180,7 @@ class Federator(object):
             time.sleep(2)
         logging.info('All clients are ready')
 
-    def remote_run_epoch(self, epochs, ratio = None, store_grad=False):
+    def remote_run_epoch(self, epochs, ratio = None, store_grad=False, current_epoch=0):
         responses = []
         client_weights = []
         selected_clients = self.select_clients(self.config.clients_per_round)
@@ -191,7 +191,7 @@ class Federator(object):
             determines to send to which nodes and which are poisoned
             """
             pill = None
-            if (client in self.poisoned_clients) & self.attack.is_active():
+            if (client in self.poisoned_clients) & self.attack.is_active(current_epoch):
                 pill = self.attack.get_poison_pill()
             responses.append((client, _remote_method_async(Client.run_epochs, client.ref, num_epoch=epochs, pill=pill)))
         self.epoch_counter += epochs
@@ -309,7 +309,7 @@ class Federator(object):
                 print(f'Running epoch {epoch}')
                 # Get new model during run, update iteratively. The model is needed to calculate the
                 # gradient by the federator.
-                self.remote_run_epoch(epoch_size, rat)
+                self.remote_run_epoch(epoch_size, rat, current_epoch=epoch)
                 addition += 1
             logging.info('Printing client data')
             print(self.client_data)

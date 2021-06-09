@@ -32,4 +32,4 @@ poison:
     scenario:
       start_round: 66
       end_round: 130
-      alpha: 0
+      availability: 0

@@ -110,18 +110,18 @@ class LabelFlipAttack(Attack):
 
 class TimedLabelFlipAttack(LabelFlipAttack):
 
-    def __init__(self, start_round=0, end_round=0, availability=0, max_rounds: int = 0, ratio: float = 0, label_shuffle: Dict = None, seed: int = 42, random=False,
+    def __init__(self, max_rounds: int = 0, ratio: float = 0, label_shuffle: Dict = None, seed: int = 42, random=False,
                  cfg: BareConfig = None, ):
         LabelFlipAttack.__init__(self, max_rounds, ratio, label_shuffle, seed, random, cfg)
-        self.start_round = start_round
-        self.end_round = end_round
-        self.availability = availability
+        self.start_round = cfg.get_attack_start_round()
+        self.end_round = cfg.get_attack_end_round()
+        self.availability = cfg.get_attack_availability()
 
-    def is_active(self, currentRound=0) -> bool:
+    def is_active(self, current_round=0) -> bool:
         """
         Timed attack is only active when the current round is in between the start and end rounds of the attack.
         """
-        return self.start_round <= currentRound <= self.end_round
+        return self.start_round <= current_round <= self.end_round
 
     def select_clients(self, poisoned_clients: List, healthy_clients: List, n):
         """

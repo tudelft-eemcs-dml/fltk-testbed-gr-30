@@ -25,14 +25,12 @@ system:
 # For a simple config is provided in configs/poison.example.yaml
 poison:
   seed: 420
-  experiments:
-    min_ratio: 0.0
-    max_ratio: 0.25
-    steps: 2
+  ratio: 0.2
   attack:
     type: "timed"
-    config: [ { 0:9, 9:0 } ]
+    config:
+      - 5: 3
     scenario:
       start_round: 0
-      end_round: 10
-      alpha: 0.5
+      end_round: 130
+      availability: 0

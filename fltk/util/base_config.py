@@ -315,6 +315,14 @@ class BareConfig(object):
     def get_attack_config(self) -> dict:
         return self.poison['attack']
 
+    def get_attack_start_round(self) -> int:
+        return self.poison['attack']['scenario']['start_round']
+
+    def get_attack_end_round(self) -> int:
+        return self.poison['attack']['scenario']['end_round']
+
+    def get_attack_availability(self) -> float:
+        return self.poison['attack']['scenario']['availability']
 
     def __str__(self):
         return "\nBatch Size: {}\n".format(self.batch_size) + \
