@@ -22,7 +22,7 @@ spec:
           value: "5000"
         - name: PYTHONUNBUFFERED
           value: "1"
-      image: gcr.io/cs4290-dml/fltk:latest
+      image: gcr.io/cs4290-wouter/fltk:latest
       name: federation-lab-server
       ports:
         - containerPort: 5000

@@ -52,7 +52,7 @@ class Attack(ABC):
 
 class LabelFlipAttack(Attack):
 
-    def isActive(self, current_round=0) -> bool:
+    def is_active(self, current_round=0) -> bool:
         return True
 
     def build_attack(self, flip_description=None) -> PoisonPill:

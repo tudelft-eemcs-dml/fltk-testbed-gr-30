@@ -36,7 +36,7 @@ spec:
           value: eth0
         - name: WORLD_SIZE
           value: {{ quote $worldsize }}
-      image: gcr.io/cs4290-dml/fltk:latest
+      image: gcr.io/cs4290-wouter/fltk:latest
       name: client-slow
       resources:
         limits:

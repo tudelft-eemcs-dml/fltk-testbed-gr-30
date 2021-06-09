@@ -26,6 +26,10 @@ poison:
   seed: 420
   ratio: 0.2
   attack:
-    type: "flip"
+    type: "timed"
     config:
       - 5: 3
+    scenario:
+      start_round: 66
+      end_round: 130
+      alpha: 0
