@@ -1,4 +1,6 @@
 import logging
+from time import sleep
+
 import numpy as np
 import random
 from abc import abstractmethod, ABC
@@ -42,7 +44,7 @@ class Attack(ABC):
         pass
 
     @abstractmethod
-    def is_active(self, current_round: int = 0) -> bool:
+    def is_active(self, federator, current_round: int = 0, ) -> bool:
         pass
 
     @abstractmethod
@@ -52,7 +54,7 @@ class Attack(ABC):
 
 class LabelFlipAttack(Attack):
 
-    def is_active(self, current_round=0) -> bool:
+    def is_active(self, federator, current_round=0) -> bool:
         return True
 
     def build_attack(self, flip_description=None) -> PoisonPill:
@@ -117,10 +119,18 @@ class TimedLabelFlipAttack(LabelFlipAttack):
         self.end_round = cfg.get_attack_end_round()
         self.availability = cfg.get_attack_availability()
 
-    def is_active(self, current_round=0) -> bool:
+    def is_active(self, federator, current_round=0) -> bool:
         """
         Timed attack is only active when the current round is in between the start and end rounds of the attack.
         """
+        if current_round == self.end_round:
+            federator.cure_clients()
+            sleep(10)
+
+        if current_round == self.start_round:
+            federator.infect_clients(self.get_poison_pill())
+            sleep(10)
+
         return self.start_round <= current_round <= self.end_round
 
     def select_clients(self, poisoned_clients: List, healthy_clients: List, n):

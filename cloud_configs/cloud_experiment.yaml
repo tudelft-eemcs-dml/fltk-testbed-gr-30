@@ -13,7 +13,7 @@ cuda: false
 experiment_prefix: 'experiment_single_machine'
 output_location: 'output'
 tensor_board_active: true
-clients_per_round: 50
+clients_per_round: 5
 system:
   federator:
     # Use the SERVICE provided by the fl-server to connect
@@ -32,4 +32,4 @@ poison:
     scenario:
       start_round: 66
       end_round: 130
-      availability: 0
+      availability: 0.9

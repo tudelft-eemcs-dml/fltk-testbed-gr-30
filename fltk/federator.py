@@ -1,5 +1,4 @@
 import logging
-import math
 import pathlib
 import time
 from pathlib import Path
@@ -11,8 +10,7 @@ from torch.distributed import rpc
 from torch.utils.tensorboard import SummaryWriter
 
 from fltk.client import Client
-from fltk.nets import Cifar10CNN
-from fltk.nets.util.utils import flatten_params, initialize_default_model
+from fltk.nets.util.utils import flatten_params, initialize_default_model, save_model
 from fltk.strategy.attack import Attack
 from fltk.strategy.client_selection import random_selection
 from fltk.util.base_config import BareConfig
@@ -76,6 +74,7 @@ class Federator(object):
     """
     clients: List[ClientRef] = []
     epoch_counter = 0
+    # TODO: Misnormer, but no time to refactor
     client_data = {}
     poisoned_clients = {}
     healthy_clients = {}
@@ -111,7 +110,8 @@ class Federator(object):
             writer = SummaryWriter(f'{self.tb_path_base}/{self.config.experiment_prefix}_client_{id}')
             self.clients.append(ClientRef(id, client, tensorboard_writer=writer))
             self.client_data[id] = []
-
+        # In additino we store our own data through the process
+        self.client_data['federator'] = []
     def update_clients(self, ratio):
         # Prevent abrupt ending of the client
         self.tb_writer.close()
@@ -150,14 +150,28 @@ class Federator(object):
         @return:
         @rtype:
         """
+        self.epoch_counter = 0
         for client in self.clients:
             _remote_method_async(Client.reset_model, client.ref)
 
+    def cure_clients(self):
+        """"
+        Function to reset data for poisoned clients
+        """
+        for client in self.poisoned_clients:
+            _remote_method_async(Client.cure_client, client.ref)
 
-    def client_load_data(self, poison_pill):
+    def infect_clients(self, pill):
+        """"
+        Function to reset data for poisoned clients
+        """
+        for client in self.poisoned_clients:
+            _remote_method_async(Client.infect_client, client.ref, pill=pill)
+
+    def client_load_data(self):
         for client in self.clients:
             _remote_method_async(Client.init_dataloader, client.ref,
-                                 pill=None if poison_pill and client not in self.poisoned_clients else poison_pill)
+                                 pill=None)
 
     def clients_ready(self):
         all_ready = False
@@ -191,17 +205,17 @@ class Federator(object):
             determines to send to which nodes and which are poisoned
             """
             pill = None
-            if (client in self.poisoned_clients) & self.attack.is_active(current_epoch):
+            if (client in self.poisoned_clients) & self.attack.is_active(self, current_epoch):
                 pill = self.attack.get_poison_pill()
             responses.append((client, _remote_method_async(Client.run_epochs, client.ref, num_epoch=epochs, pill=pill)))
-        self.epoch_counter += epochs
 
         try:
             # Test the model before waiting for the model.
-            self.test_model()
+            # Append to client data to keep better track of progress
+            self.client_data.get('federator', []).append(self.test_model())
         except Exception as e:
             print(e)
-
+        self.epoch_counter += epochs
         flat_current = None
 
 
@@ -275,7 +289,7 @@ class Federator(object):
     def ensure_path_exists(self, path):
         Path(path).mkdir(parents=True, exist_ok=True)
 
-    def run(self, ratios = [0.18, 0.12, 0.06]):
+    def run(self, ratios = [0.1, 0.2]):
         """
         Main loop of the Federator
         :return:
@@ -286,6 +300,7 @@ class Federator(object):
         poison_pill = None
         save_path = self.config
         for rat in ratios:
+            self.update_clients(rat)
             self.test_data.net = initialize_default_model(self.config, self.config.get_net())
             # Update the clients to point to the newer version.
             self.update_clients(rat)
@@ -296,8 +311,7 @@ class Federator(object):
                 print(f"Poisoning workers: {self.poisoned_clients}")
                 with open(f"{self.tb_path_base}/config_{rat}_poisoned.txt", 'w') as f:
                     f.writelines(list(map(lambda worker: worker.name, self.poisoned_clients)))
-                poison_pill = self.attack.get_poison_pill()
-            self.client_load_data(poison_pill)
+            self.client_load_data()
             self.ping_all()
             self.clients_ready()
             self.update_client_data_sizes()
@@ -312,12 +326,14 @@ class Federator(object):
                 self.remote_run_epoch(epoch_size, rat, current_epoch=epoch)
                 addition += 1
             logging.info('Printing client data')
-            print(self.client_data)
 
+            # Perform last test on the current model.
+            self.client_data.get('federator', []).append(self.test_model())
+            logging.info(f'Saving model')
+            save_model(self.test_data.net, './output', self.epoch_counter, self.config, rat)
             logging.info(f'Saving data')
             self.save_epoch_data(rat)
-            # Perform last test on the current model.
-            self.test_model()
+
             # Reset the model to continue with the next round
             self.client_reset_model()
 
@@ -358,7 +374,7 @@ class Federator(object):
             res[1].wait()
         logging.info('Weights are updated')
 
-    def test_model(self):
+    def test_model(self) -> EpochData:
         """
         Function to test the model on the test dataset.
         @return:
@@ -366,6 +382,16 @@ class Federator(object):
         """
         # Test interleaved to speed up execution, i.e. don't keep the clients waiting.
         accuracy, loss, class_precision, class_recall = self.test_data.test()
-        # self.tb_writer.add_scalar('training loss', loss, self.epoch_counter * self.test_data.get_client_datasize()) # does not seem to work :( )
+        data = EpochData(epoch_id=self.epoch_counter,
+                         duration_train=0,
+                         duration_test=0,
+                         loss_train=0,
+                         accuracy=accuracy,
+                         loss=loss,
+                         class_precision=class_precision,
+                         class_recall=class_recall,
+                         client_id='federator')
         self.tb_writer.add_scalar('accuracy', accuracy, self.epoch_counter * self.test_data.get_client_datasize())
         self.tb_writer.add_scalar('accuracy per epoch', accuracy, self.epoch_counter)
+        return data
+

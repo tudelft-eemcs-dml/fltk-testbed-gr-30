@@ -1,7 +1,7 @@
 ---
 # Experiment configuration
 # Experiment configuration
-total_epochs: 5
+total_epochs: 3
 epochs_per_cycle: 1
 wait_for_clients: true
 net: Cifar10CNN
@@ -31,6 +31,6 @@ poison:
     config:
       - 5: 3
     scenario:
-      start_round: 0
-      end_round: 130
+      start_round: 1
+      end_round: 2
       availability: 0
